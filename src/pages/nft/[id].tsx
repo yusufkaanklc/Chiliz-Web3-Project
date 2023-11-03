@@ -1,11 +1,12 @@
 import NFTDetails from "@/components/NFTDetails";
 import Layout from "@/layout/Layout";
 import { getMarketplaceContract, getNFTContract } from "@/util/getContracts";
-import { useNFT, useValidDirectListings } from "@thirdweb-dev/react";
+import { useNFT, useValidDirectListings, useTransferNFT } from "@thirdweb-dev/react";
 import { useEffect, useState } from "react";
 import CancelSellingCard from "@/components/CancelSelling";
 import SellNFTCard from "@/components/SellNFTCard";
 import { useRouter } from "next/router";
+import { useContract } from "@thirdweb-dev/react";
 
 function NFTDetailsPage() {
     const router = useRouter();
@@ -13,17 +14,17 @@ function NFTDetailsPage() {
     const [symbol, setSymbol] = useState("");
     const [listingID, setListingID] = useState("");
     const [nftID, setNftID] = useState("");
+    const [senderContractID, setSenderContractID] = useState("");
+    const [receiverContractID, setReceiverContractID] = useState("")
     const { marketplace } = getMarketplaceContract();
     const { nft_contract } = getNFTContract();
+
     const { data: nft, isLoading: isNFTLoading } = useNFT(nft_contract, nftID);
+
     const { data: directListings } = useValidDirectListings(marketplace, {
         start: 0,
         count: 100,
     });
-    const [address, setAddress] = useState(""); // Address state'i
-    const handleAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      setAddress(event.target.value); // Adresi güncelle
-    };
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -37,20 +38,17 @@ function NFTDetailsPage() {
             setSymbol(listedNFT.currencyValuePerToken.symbol);
         }
     }, [directListings, price, listingID, router.query]);
-    
-    const transferNFT = async () => {
-        if (address && nftID) {
-          try {
-            // Transfer işlemini çağır
-            await nft_contract?.erc721.transfer(address, nftID);
-            // Transfer başarılı oldu, gerekirse başka bir işlem yapabilirsiniz.
-          } catch (error) {
-            console.error("NFT transfer error:", error);
-            // Transfer sırasında bir hata oluştu, hatayı işleyebilirsiniz.
-          }
-        }
-      };
-      
+
+    const { contract } = useContract(receiverContractID);
+    const {
+        mutate: transferNFT,
+        isLoading,
+        error,
+    } = useTransferNFT(contract);
+
+    if (error) {
+        console.error("NFT transferi başarısız oldu", error);
+    }
 
     return (
         <Layout>
@@ -66,16 +64,6 @@ function NFTDetailsPage() {
                 ) : (
                     <>
                         <NFTDetails {...nft} />
-                        <div>
-                            <input
-                                type="text"
-                                value={address}
-                                onChange={handleAddressChange} // Adres değişikliklerini işle
-                                placeholder="Recipient Wallet Address"
-                              />
-                              {/* Diğer girişler */}
-                              <button onClick={transferNFT}>Transfer NFT</button>
-                            </div>
 
                         {listingID ? (
                             <CancelSellingCard
@@ -92,6 +80,27 @@ function NFTDetailsPage() {
                         )}
                     </>
                 )}
+                <div>
+                    <input 
+                    type="text"
+                    value = {senderContractID}
+                    onChange={(e) => {setSenderContractID(e.target.value)}}
+                     />
+                     <input 
+                    type="text"
+                    value = {receiverContractID}
+                    onChange={(e) => {setReceiverContractID(e.target.value)}}
+                     />
+                <button
+      disabled={isLoading}
+      onClick={() => transferNFT({
+        to: senderContractID,
+        tokenId: nftID
+      })}
+    >
+      Transfer
+    </button>
+                </div>
             </div>
         </Layout>
     );
