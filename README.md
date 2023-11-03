@@ -1,6 +1,6 @@
-# NFT Marketplace Template
+# NFT Marketplace Project
 
-This repository provides a template for creating an NFT Marketplace interface. It encompasses the frontend HTML/CSS structure, deliberately excluding any backend logic or smart contract integrations.
+This repository provides a project for creating an NFT Marketplace interface. It encompasses the frontend HTML/CSS structure, deliberately excluding any backend logic or smart contract integrations.
 
 ## Configuration Process
 
